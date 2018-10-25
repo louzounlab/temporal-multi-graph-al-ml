@@ -6,7 +6,7 @@ MACHINE_LEARNING = False
 
 REFAEL_PARAM = {
             'logger_name': "logger",
-            # Data parameters
+            # ----------------------- Data parameters
             'days_split': 1,
             'start_time': 10,
             'window_size': None,
@@ -17,9 +17,13 @@ REFAEL_PARAM = {
             'white_label': 1,
             # graph_measures + beta vectors parameters
             'max_connected': False,
-            # ML- parameters
+
+            # ---------------------- ML- parameters
             'min_nodes': 10,
-            # AL - parameters
+            # 'learn_method': "nn",
+            'learn_method': "XG_Boost",
+
+            # ---------------------- AL - parameters
             'batch_size': 2,
             'queries_per_time': 4,
             'eps': 0.01,
