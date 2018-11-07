@@ -69,7 +69,7 @@ class NeuralNet3(nn.Module):
 
     # init optimizer with RMS_prop
     def set_optimizer(self, lr):
-        return torch.optim.Adagrad(self.parameters(), lr=lr, weight_decay=0.02)
+        return torch.optim.Adagrad(self.parameters(), lr=lr, weight_decay=0.002)
 
     def forward(self, x):
         x = x.view(-1, self._in_dim)
@@ -80,7 +80,7 @@ class NeuralNet3(nn.Module):
         x = self._layer1(x)
         nn.BatchNorm1d(self._dim[2])
         x = F.relu(x)
-        nn.Dropout(p=0.3)
+        nn.Dropout(p=0.2)
         x = self._layer2(x)
         x = torch.sigmoid(x)
         return x
