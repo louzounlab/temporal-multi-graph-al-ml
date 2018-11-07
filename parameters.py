@@ -20,13 +20,13 @@ REFAEL_PARAM = {
 
             # ---------------------- ML- parameters
             'min_nodes': 10,
-            # 'learn_method': "nn",
-            'learn_method': "XG_Boost",
+            'learn_method': "nn",
+            # 'learn_method': "XG_Boost",
 
             # ---------------------- AL - parameters
-            'batch_size': 2,
-            'queries_per_time': 4,
-            'eps': 0.01,
+            'queries_per_time': 8,
+            'batch_size': 1,
+            'eps': 0,
             'target_recall': 0.7,
             'reveal_target': 0.6,
             # 'ml_method': "nn"

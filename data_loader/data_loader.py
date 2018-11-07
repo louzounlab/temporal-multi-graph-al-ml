@@ -11,7 +11,7 @@ from temporal_multi_graph import TemporalMultiGraph
 class DataLoader:
     def __init__(self, params):
         self._base_dir = __file__.replace("/", os.sep)
-        self._base_dir = os.path.join(self._base_dir.rsplit(os.sep, 1)[0])
+        self._base_dir = os.path.join(self._base_dir.rsplit(os.sep, 1)[0], "..")
         self._params = params
         self._features_by_time = []
         self._multi_graphs_by_time = []
@@ -59,9 +59,9 @@ class DataLoader:
     def _calc_features(self, pkl=True):
         # load dictionary if exists
         if pkl and self._ftr_pkl_name() in os.listdir(
-                os.path.join(self._base_dir, "..", 'pkl', 'ftr_by_time_dictionaries')):
+                os.path.join(self._base_dir, 'pkl', 'ftr_by_time_dictionaries')):
             self._features_by_time, self._multi_graphs_by_time = \
-                pickle.load(open(os.path.join(self._base_dir, "..", 'pkl', 'ftr_by_time_dictionaries',
+                pickle.load(open(os.path.join(self._base_dir, 'pkl', 'ftr_by_time_dictionaries',
                                               self._ftr_pkl_name()), "rb"))
             return
 

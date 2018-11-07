@@ -55,15 +55,15 @@ class SmartSelector:
 
     def _neural_net(self, train, test):
 
-        early_stop = self._params['early_stop'] if 'early_stop' in self._params else 200
-        epochs = self._params['epochs'] if 'epochs' in self._params else 100
+        early_stop = self._params['early_stop'] if 'early_stop' in self._params else 102
+        epochs = self._params['epochs'] if 'epochs' in self._params else 300
         if not hasattr(self, '_network'):
             model = NeuralNet3(layers_size=(225, 150, 75), lr=0.001)
-            self._binary_neural_network = FeedForwardNet(model, train_size=1, gpu=False)
+            self._binary_neural_network = FeedForwardNet(model, train_size=0.8, gpu=False)
 
         train_data, train_label = self._sep_dict(train)
         self._binary_neural_network.update_data(train_data, train_label)
-        self._binary_neural_network.train(epochs, early_stop=early_stop, validation_rate=0.001)
+        self._binary_neural_network.train(epochs, early_stop=early_stop, validation_rate=200, stop_auc=5)
         clean_test = {name: tup[0] for name, tup in test.items()}         # remove labels from the test
         results = self._binary_neural_network.predict(clean_test)
         # assuming black = 0
@@ -82,4 +82,5 @@ class SmartSelector:
         y_score_test = clf_xgb.predict(dtest)
         index_predict = [(test_idx[i], y_score_test[i]) for i in range(len(test_idx))]
         index_predict.sort(key=itemgetter(1))
-        return [index_predict[i][0] for i in range(self._batch_size)]
+        stop = min(self._batch_size, len(index_predict))
+        return [index_predict[i][0] for i in range(stop)]
