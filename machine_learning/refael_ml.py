@@ -17,9 +17,9 @@ class RefaelML:
         self._params = params
 
     def run(self):
-        if self._method.value == "nn":
+        if self._method == "nn":
             self._neural_net()
-        if self._method.value == "XG_Boost":
+        if self._method == "XG_Boost":
             self._learn_xgb()
 
     def _matrix_for_time(self, time_idx: int, key_func=None):

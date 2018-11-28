@@ -1,13 +1,11 @@
 from operator import itemgetter
-
 import numpy as np
 from scipy.spatial.distance import cdist
-from sklearn.ensemble import RandomForestClassifier
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
-
 from nn_activator import FeedForwardNet
 from nn_models import NeuralNet3, ActiveLearningModel
+import random
 
 
 class SmartSelector:
@@ -24,8 +22,10 @@ class SmartSelector:
     def ml_select(self, train, test):
         if self._ml_type == "nn":
             return self._neural_net(train, test)
-        if self._ml_type == "XG_Boost":
+        elif self._ml_type == "XG_Boost":
             return self._xg_boost(train, test)
+        elif self._ml_type == "rand":
+            return self._rand(train, test)
 
     @staticmethod
     def _to_matrix(data):
@@ -42,6 +42,11 @@ class SmartSelector:
             data[name] = vec
             labels[name] = label
         return data, labels
+
+    def _rand(self, data1, data2):
+        mx2, idx_2, l2 = self._to_matrix(data2)
+        random.shuffle(idx_2)
+        return idx_2[0:self._batch_size]
 
     def _euclidean(self, data1, data2, typ="euclidean"):
         mx1, idx_1, l1 = self._to_matrix(data1)

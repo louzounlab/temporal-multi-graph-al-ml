@@ -1,6 +1,6 @@
 import os
-from active_learning.active_learning import TimedActiveLearning
-from data_loader.data_loader import DataLoader
+from active_learning import TimedActiveLearning
+from data_loader import DataLoader
 from parameters import REFAEL_PARAM, ACTIVE_LEARNING, MACHINE_LEARNING
 from refael_ml import RefaelML
 
@@ -22,8 +22,9 @@ class RefaelLearner:
             else self._data_loader.features_by_time
         al = TimedActiveLearning(data, self._params)
         al.run()
-        al.plot()
-
+        # al.pred_vs_label()
+        # al.plot()
+        al.tziurim()
 
 if __name__ == "__main__":
     r = RefaelLearner()

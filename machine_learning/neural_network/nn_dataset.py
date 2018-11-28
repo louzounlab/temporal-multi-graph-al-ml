@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 import numpy as np
 import torch
+import copy
 
 
 class DynamicData(Dataset):
@@ -18,7 +19,18 @@ class DynamicData(Dataset):
             self._labels[name] = new_labels[name] if name not in self._labels else self._labels[name]
 
     def __getitem__(self, item):
-        x = torch.Tensor(self._components[self._names[item]])
+        # x = torch.Tensor(self._components[self._names[item]])
+        rand = np.random.uniform(0, 1)
+        if rand > 0.5:
+            blacks = [name for name, val in self._labels.items() if val == 0]
+            if len(blacks) != 0:
+                np.random.shuffle(blacks)
+                x = copy.deepcopy(torch.Tensor(self._components[blacks[0]]))
+            else:
+                x = copy.deepcopy(torch.Tensor(self._components[self._names[item]]))
+        else:
+            x = copy.deepcopy(torch.Tensor(self._components[self._names[item]]))
+
         label = torch.Tensor([self._labels[self._names[item]]])
         if self._gpu:
             x.cuda()
