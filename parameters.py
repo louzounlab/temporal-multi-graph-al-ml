@@ -29,6 +29,6 @@ REFAEL_PARAM = {
             'eps': 0,
             'target_recall': 0.7,
             'reveal_target': 0.6,
-            # 'ml_method': "nn"
-            'ml_method': "XG_Boost"
+            'ml_method': "nn"
+            # 'ml_method': "XG_Boost"
         }

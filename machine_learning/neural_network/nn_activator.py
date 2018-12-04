@@ -1,5 +1,5 @@
 import torch
-
+import copy
 import torch.nn.functional as F
 from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader
@@ -50,10 +50,12 @@ class FeedForwardNet:
         )
 
     # train a model, input is the enum of the model type
-    def train(self, total_epoch, early_stop=None, validation_rate=1, reset_optimizer_lr=False):
+    def train(self, total_epoch, early_stop=None, validation_rate=1, reset_optimizer_lr=False, stop_auc=False):
         if reset_optimizer_lr:
             self._model.set_optimizer(lr=reset_optimizer_lr)
         # EarlyStopping
+        best_model = copy.deepcopy(self._model)
+        best_auc = 0
         prev_auc = 0
         curr_auc = 0
         count_no_improvement = 0
@@ -72,22 +74,35 @@ class FeedForwardNet:
                 loss.backward()                                 # back propagation
                 self._model.optimizer.step()                    # update weights
 
+            t = "Train"
+
+            if stop_auc:
+                curr_auc_test, curr_loss = self._validate(self._test_loader)
+                if best_auc < curr_auc_test < 1:
+                    best_auc = curr_auc_test
+                    best_model = copy.deepcopy(self._model)
+
             # validate
             if validation_rate and epoch_num % validation_rate == 0:
-                print(str(epoch_num) + "/" + str(total_epoch))
-                curr_auc = self._validate(self._train_validation, "Train")
+                curr_auc, curr_loss = self._validate(self._train_validation)
                 auc_res.append(curr_auc)
+
+                print(str(epoch_num) + "/" + str(total_epoch))
+                print(t + " --- validation results = auc:\t" + str(curr_auc) + "\tavg_loss:\t" + str(curr_loss)) if \
+                    curr_auc >= 0 else print( t + " --- AUC_Error")
 
             # EarlyStopping
             count_no_improvement = 0 if prev_auc < curr_auc else count_no_improvement + 1
             prev_auc = curr_auc
             if early_stop and count_no_improvement > early_stop:
                 break
+
+        if stop_auc and best_auc > 0:
+            self._model = best_model
         return auc_res
 
     # validation function only the model and the data are important for input, the others are just for print
-    def _validate(self, data_loader, type=""):
-        auc = 0
+    def _validate(self, data_loader):
         loss_count = 0
         self._model.eval()
 
@@ -108,15 +123,15 @@ class FeedForwardNet:
         loss = float(loss_count / len(data_loader.dataset))
         try:
             auc = roc_auc_score(y_true_auc, y_score_auc)
-            print(type + " validation results = auc:\t" + str(auc) + "\tavg_loss:\t" + str(loss))
         except ValueError:
-            auc += 0.001
-            print("AUC value error")
-        return auc
+            auc = -1
+        return auc, loss
 
     # Test
     def test(self):
-        return self._validate(self._test_loader, "Test")
+        auc, loss =  self._validate(self._test_loader)
+        print("Test --- validation results = auc:\t" + str(auc) + "\tavg_loss:\t" + str(loss)) if \
+            auc >= 0 else print("Test --- AUC_Error")
 
     def predict(self, data_dict):
         results = {}
@@ -128,10 +143,6 @@ class FeedForwardNet:
             results[name] = output
         return results
 
-
-if __name__ == "__main__":
-    n = NeuralNet()
-    end = 0
 
 # (self, num_layers=3, layers_dim=(223, 140, 70), train_size=0.8, lr=0.0001, batch_norm=True, drop_out=0.3
 #                  , l2_penalty=0.005, activation_func="relu", gpu=False):

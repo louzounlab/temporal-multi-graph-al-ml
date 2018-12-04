@@ -28,15 +28,15 @@ class DataLoader:
         return self._multi_graphs_by_time
 
     def _ftr_pkl_name(self):
-        return self._params['database'] + "_" + str(self._params['days_split']) + "_" + str(
-            self._params['start_time']) \
-               + "_" + str(self._params['window_size']) + "_" + str(self._params['directed']) + "_" + \
-               str(self._params['max_connected']) + ".pkl"
+            return self._params['database_full_name'] + ".pkl"
+            # return self._params['database'] + "__ds_" + str(self._params['days_split']) + "_st_" + \
+            #        str(self._params['start_time']) + "_ws_" + str(self._params['window_size']) + "_d_" + \
+            #        str(self._params['directed']) + "_mc_" + str(self._params['max_connected'] + ".pkl")
 
     def _load_database(self, force_build=False):
         if self._database and not force_build:
             return
-        self._database = TemporalMultiGraph(self._params['database'],
+        self._database = TemporalMultiGraph(self._params['database_full_name'],
                                             os.path.join('INPUT_DATABASE', self._params['data_file_name']),
                                             time_format='MIL',
                                             time_col='StartTime',
@@ -68,8 +68,8 @@ class DataLoader:
         self._load_database()
         labels = self._database.labels
         # make directory for database
-        dir_path = os.path.join(self._base_dir, 'pkl', 'graph_measures', self._params['database'])
-        if self._params['database'] not in os.listdir(os.path.join(self._base_dir, 'pkl', 'graph_measures')):
+        dir_path = os.path.join(self._base_dir, 'pkl', 'graph_measures', self._params['database_full_name'])
+        if self._params['database_full_name'] not in os.listdir(os.path.join(self._base_dir, 'pkl', 'graph_measures')):
             os.mkdir(dir_path)
 
         # calculate features
@@ -79,7 +79,7 @@ class DataLoader:
             for name in multi_graph.graph_names():
                 raw_ftr = GraphFeatures(multi_graph.get_gnx(name), NODE_FEATURES_ML, dir_path,
                                         is_max_connected=self._params['max_connected'],
-                                        logger=PrintLogger(self._params['database']))
+                                        logger=PrintLogger(self._params['database_full_name']))
                 nodes_and_edges = [multi_graph.node_count(graph_id=name), multi_graph.edge_count(graph_id=name)]
                 ftr_tmp_dict[name] = (FeaturesProcessor(raw_ftr).activate_motif_ratio_vec(to_add=nodes_and_edges),
                                       labels[name])
