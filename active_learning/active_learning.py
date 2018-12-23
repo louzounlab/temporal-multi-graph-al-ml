@@ -14,12 +14,14 @@ class TimedActiveLearning:
         self._base_dir = __file__.replace("/", os.sep)
         self._base_dir = os.path.join(self._base_dir.rsplit(os.sep, 1)[0], "..")
         self._params = params
-        self._recall = [0]
+        self._recall = [(0, 0)]
+        self._precision = [(0, 0)]  # [(time, precision)]
+        self._temp_pred_label = []  # temporal list of [(prediction, label)] that will help calculating precision.
         self._data_by_time = data
         self._test = self._data_by_time[0]
         self._train = {}
         self._init_variables(params)
-        self._n_black = self._count_black(params)                        # number of blacks
+        self._n_black, self._total_communities = self._count_black(params)                        # number of blacks
         self._stop_cond = np.round(self._target_recall * self._n_black)  # number of blacks to find - stop condition
 
     def _init_variables(self, params):
@@ -37,24 +39,34 @@ class TimedActiveLearning:
 
     # ---------------------- NOTE call only after run is activated
     def best_recall_plot(self):
-        count_dict = {}
-        black_time = []
+        black_count_dict = {}
+        total_count_dict = {}
+        blacks_over_time = [0]
+        total_over_time = [0]
         for t in self._data_by_time:
             for name, (vec, label) in t.items():
+                total_count_dict[name] = label
                 if label != self._white:
-                    count_dict[name] = label
-            black_time.append(len(count_dict))
+                    black_count_dict[name] = label
+            blacks_over_time.append(len(black_count_dict))
+            total_over_time.append(len(total_count_dict))
 
-        xb = [i for i in range(self._len + 1)]
-        yb = [0] + [i / self._n_black for i in black_time]
+        queries = [0] + [self._queries_per_time * self._batch_size * (i+1) for i in range(self._len)]
+
+        xb = []
+        yb = []
+        guessed = [0]
+        for i in range(self._len + 1):
+            if queries[i] - guessed[i-1] < self._queries_per_time * self._batch_size:
+                guessed.append(guessed[i-1])
+                continue
+            guessed.append(min(total_over_time[i], queries[i]))
+            best_black = min(blacks_over_time[i], queries[i])
+
+            xb.append(guessed[i] / self._total_communities)
+            yb.append(best_black / self._n_black)
+
         return xb, yb
-
-    def _total_num_examples(self):
-        examples = []
-        for t in self._data_by_time:
-            for name, (vec, label) in t.items():
-                examples.append(name)
-        return len(set(examples))
 
     def _count_black(self, params):
         all_labels = {}
@@ -62,7 +74,8 @@ class TimedActiveLearning:
             for name, (vec, label) in t.items():
                 all_labels[name] = label
         print(Counter(all_labels.values()))
-        return sum([val for key, val in Counter(all_labels.values()).items() if key != params['white_label']])
+        return sum([val for key, val in Counter(all_labels.values()).items() if key != params['white_label']]), \
+               len(all_labels)
 
     def _forward_time(self):
         self._time += 1
@@ -88,7 +101,11 @@ class TimedActiveLearning:
             top = self._selector.distance_select(self._train, self._test)
         else:
             # idx -> by learning
-            top = self._selector.ml_select(self._train, self._test)
+            name_pred_label = self._selector.ml_select(self._train, self._test)
+            top = []
+            for t in name_pred_label:
+                top.append(t[0])
+                self._temp_pred_label.append((t[1], t[2]))
         self._reveal(top)
 
     def _reveal(self, top):
@@ -101,22 +118,23 @@ class TimedActiveLearning:
             # add feature vec to train
             self._train[name] = self._test[name]
             del self._test[name]
-        e = 1
 
     def run(self):
         # number of queries made AFTER first exploration
         queries_made = 2 if self._batch_size == 1 else 1
-        start_time = 0
+        start_time = 1
         # forward until there is some graph to start from ( first times may not contain any graph )
         while len(self._test) == 0:
             self._forward_time()
             start_time += 1
-            self._recall.append(0)
+
         # first exploration - reveal by distance
         self._first_exploration()
-        self._recall.append(self._found[BLACK] / self._n_black)
-        for i in range(start_time, self._len - 1):      # TODO stop when target recall reached
+        self._recall.append((len(self._train) / self._total_communities, self._found[BLACK] / self._n_black))
+        self._precision.append((start_time, 0))  # By this time, no guesses were made.
+        for i in range(start_time, self._len):
             print("-----------------------------------    TIME " + str(i) + "    -------------------------------------")
+            # self._temp_pred_label = []  # If precision(t) = True_guesses/total_guesses (time<=t), ctrl+/
             # as long as number as queries made < K  &&  test contain some data to ask about
             while queries_made < self._queries_per_time and len(self._test) >= self._batch_size:
                 self._explore_exploit()
@@ -125,20 +143,35 @@ class TimedActiveLearning:
             # print results for current time + forward time
             print("test_len =" + str(len(self._test)) + ", train len=" + str(len(self._train)) + ", total =" +
                   str(len(self._train) + len(self._test)))
-            self._recall.append(self._found[BLACK] / self._n_black)
+            temp_to_prec = [1 if round(t[0]) == t[1] else 0 for t in self._temp_pred_label]
+            self._precision.append((i, (sum(temp_to_prec)/len(temp_to_prec) if len(temp_to_prec) else 0)))
+            self._recall.append((len(self._train) / self._total_communities, self._found[BLACK] / self._n_black))
             print(str(self._found[BLACK]) + " / " + str(self._n_black))
             self._forward_time()
-        return [i for i in range(self._len + 1)], self._recall
+        return [x for x, y in self._recall], [y for x, y in self._recall], [p[1] for p in self._precision]
 
-    def plot(self):
+    def recall_plot(self, extra_line=None):
         g_title = "AL recall over time - " + self._params['learn_method'] + " - window: " + str(self._params['window_size'])
         p = figure(plot_width=600, plot_height=250, title=g_title,
                    x_axis_label="revealed:  (time*batch_size)/total_communities", y_axis_label="recall")
-        x_axis = [(i * self._batch_size * self._queries_per_time) / (len(self._train) + len(self._test))
-                  for i in range(self._len)]
-        p.line(x_axis, [y / self._len for y in range(self._len)], line_color='red')
-        p.line(x_axis, self._recall, line_color='blue')
+        if extra_line:
+            p.line(extra_line[0], extra_line[1], line_color='red')
+        p.line([x for x, y in self._recall], [y for x, y in self._recall], line_color='blue')
+        best_x, best_y, = self.best_recall_plot()
+        p.line(best_x, best_y, line_color='green')
         plot_name = "AL_" + datetime.datetime.now().strftime("%d%m%y_%H%M%S")
+        save(p, os.path.join(self._base_dir, "fig", "active_learning", plot_name + ".html"))
+        param_file = open(os.path.join(self._base_dir, "fig", "active_learning", plot_name + "_params.txt"), "wt")
+        param_file.write(str(self._params))
+        param_file.close()
+
+    def precision_plot(self):
+        graph_title = "AL precision over time - " + self._params['learn_method'] + " - window: " \
+                      + str(self._params['window_size'])
+        p = figure(plot_width=600, plot_height=250, title=graph_title,
+                   x_axis_label="time", y_axis_label="recall")
+        p.line([p[0] for p in self._precision], [p[1] for p in self._precision], line_color='blue')
+        plot_name = "AL_precision_" + datetime.datetime.now().strftime("%d%m%y_%H%M%S")
         save(p, os.path.join(self._base_dir, "fig", "active_learning", plot_name + ".html"))
         param_file = open(os.path.join(self._base_dir, "fig", "active_learning", plot_name + "_params.txt"), "wt")
         param_file.write(str(self._params))

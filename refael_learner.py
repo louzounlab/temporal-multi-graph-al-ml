@@ -18,26 +18,38 @@ class RefaelLearner:
                str(self._params['start_time']) + "_ws_" + str(self._params['window_size']) + "_d_" + \
                str(self._params['directed']) + "_mc_" + str(self._params['max_connected'])
 
+    def data_loader(self):
+        return self._data_loader
+
+    def base_dir(self):
+        return self._base_dir
+
     def run_ml(self):
         data = self._data_loader.filter_by_nodes(min_nodes=self._params['min_nodes']) if self._params['min_nodes'] \
             else self._data_loader.features_by_time
         RefaelML(self._params, data).run()
 
-    def run_al(self):
+    def run_al(self, rand=None):
         data = self._data_loader.filter_by_nodes(min_nodes=self._params['min_nodes']) if self._params['min_nodes'] \
             else self._data_loader.features_by_time
+        if rand:
+            temp_lm = self._params['learn_method']
+            temp_eps = self._params['eps']
+            self._params['learn_method'] = "rand"
+            rand_x, rand_y, rand_prec = TimedActiveLearning(data, self._params).run()
+            self._params['learn_method'] = temp_lm
+            self._params['eps'] = temp_eps
         al = TimedActiveLearning(data, self._params)
-        best = al.best_recall_plot()
         res = al.run()
-        al.plot()
-        return res, best
+        al.recall_plot(extra_line=(rand_x, rand_y)) if rand else al.recall_plot()
+        return res
 
 
 if __name__ == "__main__":
 
     r = RefaelLearner()
     if ACTIVE_LEARNING:
-        r.run_al()
+        r.run_al(rand=True)
 
     if MACHINE_LEARNING:
         r.run_ml()
