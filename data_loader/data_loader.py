@@ -2,7 +2,7 @@ import pickle
 from collections import Counter
 import os
 from features_meta import NODE_FEATURES_ML
-from features_processor import FeaturesProcessor
+from features_processor import FeaturesProcessor, log_norm
 from graph_features import GraphFeatures
 from loggers import PrintLogger
 from temporal_multi_graph import TemporalMultiGraph
@@ -37,7 +37,8 @@ class DataLoader:
         if self._database and not force_build:
             return
         self._database = TemporalMultiGraph(self._params['database_full_name'],
-                                            os.path.join('INPUT_DATABASE', self._params['data_file_name']),
+                                            os.path.join(self._base_dir,
+                                                         'INPUT_DATABASE', self._params['data_file_name']),
                                             time_format='MIL',
                                             time_col='StartTime',
                                             src_col='SourceID',
@@ -46,7 +47,8 @@ class DataLoader:
                                             subgraph_name_col='Community',
                                             days=self._params['days_split'],
                                             time_format_out=self._params['date_format'],
-                                            directed=self._params['directed'])
+                                            directed=self._params['directed'],
+                                            task=self._params["task"])
 
     def count_black(self):
         if not self._num_blacks:

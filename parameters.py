@@ -1,8 +1,7 @@
 
 
-ACTIVE_LEARNING = True
-MACHINE_LEARNING = False
-MISC = None  # "statgraphs" or None
+ACTIVE_LEARNING = False
+MACHINE_LEARNING = True
 
 
 REFAEL_PARAM = {
@@ -11,8 +10,8 @@ REFAEL_PARAM = {
             'days_split': 1,
             'start_time': 10,
             'window_size': None,
-            'database': 'Refael_18_12',
-            'data_file_name': 'Refael_18_12_18_Binary.csv',  # should be in ../data/
+            'database': 'Refael_12_18',
+            'data_file_name': 'Refael_Color1_12_18.csv',  # should be in ../data/
             'date_format': "%Y-%m-%d",  # Refael
             'directed': True,
             'white_label': 1,
@@ -24,6 +23,7 @@ REFAEL_PARAM = {
             # 'learn_method': "nn",
             'learn_method': "XG_Boost",
             # 'learn_method': "rand",
+            'task': 'Multiclass1',  # Or Multiclass2, or Binary
 
             # ---------------------- AL - parameters
             'queries_per_time': 1,

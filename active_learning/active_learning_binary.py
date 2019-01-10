@@ -3,13 +3,13 @@ import os
 from collections import Counter
 import numpy as np
 from bokeh.plotting import figure, show, save
-from smart_selctors import SmartSelector
+from smart_selectors import SmartSelector
 
 BLACK = 0
 OTHER = 1
 
 
-class TimedActiveLearning:
+class TimedActiveLearningBi:
     def __init__(self, data: list, params):
         self._base_dir = __file__.replace("/", os.sep)
         self._base_dir = os.path.join(self._base_dir.rsplit(os.sep, 1)[0], "..")
@@ -25,7 +25,7 @@ class TimedActiveLearning:
         self._stop_cond = np.round(self._target_recall * self._n_black)  # number of blacks to find - stop condition
 
     def _init_variables(self, params):
-        self._white = params['white_label']                              # who is the _white
+        self._white = params['white_label']
         self._batch_size = params['batch_size']
         self._eps = params['eps']
         self._target_recall = params['target_recall']
@@ -65,7 +65,6 @@ class TimedActiveLearning:
 
             xb.append(guessed[i] / self._total_communities)
             yb.append(best_black / self._n_black)
-
         return xb, yb
 
     def _count_black(self, params):
@@ -131,7 +130,7 @@ class TimedActiveLearning:
         # first exploration - reveal by distance
         self._first_exploration()
         self._recall.append((len(self._train) / self._total_communities, self._found[BLACK] / self._n_black))
-        self._precision.append((start_time, 0))  # By this time, no guesses were made.
+        self._precision.append((len(self._train) / self._total_communities, 0))  # By this time, no guesses were made.
         for i in range(start_time, self._len):
             print("-----------------------------------    TIME " + str(i) + "    -------------------------------------")
             # self._temp_pred_label = []  # If precision(t) = True_guesses/total_guesses (time<=t), ctrl+/
@@ -143,8 +142,10 @@ class TimedActiveLearning:
             # print results for current time + forward time
             print("test_len =" + str(len(self._test)) + ", train len=" + str(len(self._train)) + ", total =" +
                   str(len(self._train) + len(self._test)))
-            temp_to_prec = [1 if round(t[0]) == t[1] else 0 for t in self._temp_pred_label]
-            self._precision.append((i, (sum(temp_to_prec)/len(temp_to_prec) if len(temp_to_prec) else 0)))
+            temp_to_prec = [1 if round(t[0]) == t[1] else 0 for t in self._temp_pred_label if round(t[0]) != self._white]
+
+            self._precision.append((len(self._train) / self._total_communities,
+                                    (sum(temp_to_prec)/len(temp_to_prec) if len(temp_to_prec) else 0)))
             self._recall.append((len(self._train) / self._total_communities, self._found[BLACK] / self._n_black))
             print(str(self._found[BLACK]) + " / " + str(self._n_black))
             self._forward_time()
@@ -157,19 +158,21 @@ class TimedActiveLearning:
         if extra_line:
             p.line(extra_line[0], extra_line[1], line_color='red')
         p.line([x for x, y in self._recall], [y for x, y in self._recall], line_color='blue')
-        best_x, best_y, = self.best_recall_plot()
+        best_x, best_y = self.best_recall_plot()
         p.line(best_x, best_y, line_color='green')
-        plot_name = "AL_" + datetime.datetime.now().strftime("%d%m%y_%H%M%S")
+        plot_name = "AL_recall_" + datetime.datetime.now().strftime("%d%m%y_%H%M%S")
         save(p, os.path.join(self._base_dir, "fig", "active_learning", plot_name + ".html"))
         param_file = open(os.path.join(self._base_dir, "fig", "active_learning", plot_name + "_params.txt"), "wt")
         param_file.write(str(self._params))
         param_file.close()
 
-    def precision_plot(self):
+    def precision_plot(self, extra_line=None):
         graph_title = "AL precision over time - " + self._params['learn_method'] + " - window: " \
                       + str(self._params['window_size'])
         p = figure(plot_width=600, plot_height=250, title=graph_title,
-                   x_axis_label="time", y_axis_label="recall")
+                   x_axis_label="time", y_axis_label="precision")
+        if extra_line:
+            p.line(extra_line[0], extra_line[1], line_color='red')
         p.line([p[0] for p in self._precision], [p[1] for p in self._precision], line_color='blue')
         plot_name = "AL_precision_" + datetime.datetime.now().strftime("%d%m%y_%H%M%S")
         save(p, os.path.join(self._base_dir, "fig", "active_learning", plot_name + ".html"))
