@@ -48,11 +48,12 @@ class SmartSelector:
         mx2, idx_2, l2 = self._to_matrix(data2)
         name_to_idx = {name: i for i, name in enumerate(idx_2)}
         random.shuffle(idx_2)
+        stop = min(self._batch_size, len(idx_2))
         if self._num_classes is not None:
-            return [(i, random.randint(0, self._num_classes-1), l2[name_to_idx[i]]) for i in idx_2[:self._batch_size]]
+            return [(i, random.randint(0, self._num_classes-1), l2[name_to_idx[i]]) for i in idx_2[:stop]]
         else:
             return [(i, 0 if np.random.normal(0.5, 0.1) > 0.5 else 1, l2[name_to_idx[i]])
-                    for i in idx_2[:self._batch_size]]
+                    for i in idx_2[:stop]]
 
     def _euclidean(self, data1, data2, typ="euclidean"):
         mx1, idx_1, l1 = self._to_matrix(data1)
@@ -61,7 +62,8 @@ class SmartSelector:
         dists = cdist(mx1, mx2, typ)
         # return the most distant rows
         top_index = dists.mean(axis=0).argsort(kind='heapsort').tolist()
-        selected_idx = top_index[0:self._batch_size]
+        stop = min(self._batch_size, len(top_index))
+        selected_idx = top_index[0:stop]
         return [idx_2[i] for i in selected_idx]
 
     def _neural_net(self, train, test):
@@ -77,8 +79,11 @@ class SmartSelector:
         self._binary_neural_network.train(epochs, early_stop=early_stop, validation_rate=200, stop_auc=5)
         clean_test = {name: tup[0] for name, tup in test.items()}         # remove labels from the test
         results = self._binary_neural_network.predict(clean_test)
-        # assuming black = 0
-        return [(key, val.item(), test[key][1]) for key, val in sorted(results.items(), key=lambda x: x[1])][0:self._batch_size]
+        all_data = [(key, val.item(), test[key][1]) for key, val in sorted(results.items(), key=lambda x: x[1],
+                                                                           reverse=True if not self._params[
+                                                                               'white_label'] else False)]
+        stop = min(self._batch_size, len(all_data))
+        return all_data[0:stop]
 
     def _xg_boost(self, train, test):
         if self._params["task"] == "Binary":
@@ -96,9 +101,12 @@ class SmartSelector:
         params = {'silent': True, 'booster': 'gblinear', 'lambda': 0.07, 'eta': 0.17, 'objective': 'binary:logistic'}
         clf_xgb = xgb.train(params, dtrain=dtrain, evals=[(dtrain, 'train'), (deval, 'eval')],
                             early_stopping_rounds=10, verbose_eval=False)
-        y_score_test = clf_xgb.predict(dtest)
+        try:
+            y_score_test = clf_xgb.predict(dtest)
+        except ValueError:
+            y_score_test = 0
         index_predict = [(test_idx[i], y_score_test[i], y_test[i]) for i in range(len(test_idx))]
-        index_predict.sort(key=itemgetter(1))
+        index_predict.sort(key=itemgetter(1), reverse=True if not self._params['white_label'] else False)
         stop = min(self._batch_size, len(index_predict))
         return [index_predict[i] for i in range(stop)]
 

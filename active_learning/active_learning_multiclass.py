@@ -5,6 +5,7 @@ from operator import itemgetter
 
 import numpy as np
 from bokeh.plotting import figure, show, save
+from bokeh.io import export_png
 from smart_selectors import SmartSelector
 
 
@@ -29,7 +30,7 @@ class TimedActiveLearningMulti:
         self._selector = SmartSelector(params, self._batch_size, ml_method=params['learn_method'],
                                        distance_method="euclidean", num_classes=self._num_classes)
         self._n_color, self._total_communities = self._count_color()  # number of every color
-        self._recalls = [[(0, 0)]] * self._num_classes
+        self._recalls = [[]] * self._num_classes
         self._stop_cond = np.round(self._target_recall * self._total_communities)  # number to find - stop condition
         self._time = 0  # how many nodes we asked about
         self._found = [0] * self._num_classes
@@ -54,7 +55,7 @@ class TimedActiveLearningMulti:
 
             queries = [0] + [self._queries_per_time * self._batch_size * (i+1) for i in range(self._len)]
 
-            xb = []
+            xb = [i for i in range(self._len)]
             yb = []
             guessed = [0]
             for i in range(self._len + 1):
@@ -64,7 +65,6 @@ class TimedActiveLearningMulti:
                 guessed.append(min(total_over_time[i], queries[i]))
                 best_color = min(color_over_time[i], queries[i])
 
-                xb.append(guessed[i] / self._total_communities)
                 yb.append(best_color / self._n_color[color])
             plot_by_colors.append((xb, yb))
         return plot_by_colors
@@ -129,8 +129,8 @@ class TimedActiveLearningMulti:
         # first exploration - reveal by distance
         self._first_exploration()
         for cl in range(self._num_classes):
-            self._recalls[cl].append((len(self._train) / self._total_communities, self._found[cl] / self._n_color[cl]))
-        self._accuracy.append((len(self._train) / self._total_communities, 0))  # By this time, no guesses were made.
+            self._recalls[cl] = self._recalls[cl] + [(start_time - 1, self._found[cl] / self._n_color[cl])]
+        self._accuracy.append((start_time - 1, 0))  # By this time, no guesses were made.
         for i in range(start_time, self._len):
             print("-----------------------------------    TIME " + str(i) + "    -------------------------------------")
             # self._temp_pred_label = []  # If precision(t) = True_guesses/total_guesses (time<=t), ctrl+/
@@ -144,11 +144,9 @@ class TimedActiveLearningMulti:
                   str(len(self._train) + len(self._test)))
             temp_to_prec = [1.0 / self._n_color[int(t[1])] if round(t[0]) == t[1] else 0 for t in self._temp_pred_label]
 
-            self._accuracy.append((len(self._train) / self._total_communities,
-                                   (sum(temp_to_prec)/self._num_classes if len(temp_to_prec) else 0)))
+            self._accuracy.append((i, (sum(temp_to_prec)/self._num_classes if len(temp_to_prec) else 0)))
             for cl in range(self._num_classes):
-                self._recalls[cl].append(
-                    (len(self._train) / self._total_communities, self._found[cl] / self._n_color[cl]))
+                self._recalls[cl].append((i, self._found[cl] / self._n_color[cl]))
                 print("Class " + str(cl) + ": " + str(self._found[cl]) + " / " + str(self._n_color[cl]))
             print("Accuracy: " + str(sum(temp_to_prec) / self._num_classes))
             self._forward_time()
@@ -160,7 +158,7 @@ class TimedActiveLearningMulti:
             g_title = "AL recall over time - " + str(col) + " - " + self._params['learn_method'] + " - window: " + \
                       str(self._params['window_size'])
             p = figure(plot_width=600, plot_height=250, title=g_title,
-                       x_axis_label="revealed:  (time*batch_size)/total_communities", y_axis_label="recall")
+                       x_axis_label="time", y_axis_label="recall")
             if extra_line:
                 extra_time = [extra_line[col][t][0] for t in range(len(extra_line[col]))]
                 extra_recall = [extra_line[col][t][1] for t in range(len(extra_line[col]))]
@@ -171,7 +169,8 @@ class TimedActiveLearningMulti:
             best_x, best_y = best_plot[col]
             p.line(best_x, best_y, line_color='green')
             plot_name = "AL_recall_" + str(col) + "_" + datetime.datetime.now().strftime("%d%m%y_%H%M%S")
-            save(p, os.path.join(self._base_dir, "fig", "active_learning", plot_name + ".html"))
+            # save(p, os.path.join(self._base_dir, "fig", "active_learning", plot_name + ".html"))
+            export_png(p, os.path.join(self._base_dir, "fig", "active_learning", plot_name + ".png"))
             param_file = open(os.path.join(self._base_dir, "fig", "active_learning", plot_name + "_params.txt"), "wt")
             param_file.write(str(self._params))
             param_file.close()
@@ -180,14 +179,15 @@ class TimedActiveLearningMulti:
         graph_title = "AL accuracy over time - " + self._params['learn_method'] + " - window: " \
                       + str(self._params['window_size'])
         p = figure(plot_width=600, plot_height=250, title=graph_title,
-                   x_axis_label="time", y_axis_label="precision")
+                   x_axis_label="time", y_axis_label="weighted accuracy")
         if extra_line:
             extra_time = [extra_line[t][0] for t in range(len(extra_line))]
             extra_acc = [extra_line[t][1] for t in range(len(extra_line))]
             p.line(extra_time, extra_acc, line_color='red')
         p.line([p[0] for p in self._accuracy], [p[1] for p in self._accuracy], line_color='blue')
-        plot_name = "AL_precision_" + datetime.datetime.now().strftime("%d%m%y_%H%M%S")
-        save(p, os.path.join(self._base_dir, "fig", "active_learning", plot_name + ".html"))
+        plot_name = "AL_accuracy_" + datetime.datetime.now().strftime("%d%m%y_%H%M%S")
+        # save(p, os.path.join(self._base_dir, "fig", "active_learning", plot_name + ".html"))
+        export_png(p, os.path.join(self._base_dir, "fig", "active_learning", plot_name + ".png"))
         param_file = open(os.path.join(self._base_dir, "fig", "active_learning", plot_name + "_params.txt"), "wt")
         param_file.write(str(self._params))
         param_file.close()
