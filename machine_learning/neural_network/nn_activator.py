@@ -89,7 +89,7 @@ class FeedForwardNet:
 
                 print(str(epoch_num) + "/" + str(total_epoch))
                 print(t + " --- validation results = auc:\t" + str(curr_auc) + "\tavg_loss:\t" + str(curr_loss)) if \
-                    curr_auc >= 0 else print( t + " --- AUC_Error")
+                    curr_auc >= 0 else print(t + " --- AUC_Error")
 
             # EarlyStopping
             count_no_improvement = 0 if prev_auc < curr_auc else count_no_improvement + 1
