@@ -48,12 +48,12 @@ class SmartSelector:
         mx2, idx_2, l2 = self._to_matrix(data2)
         name_to_idx = {name: i for i, name in enumerate(idx_2)}
         random.shuffle(idx_2)
+        guess = [(i, random.randint(0, self._num_classes - 1), l2[name_to_idx[i]]) for i in
+                 idx_2] if self._num_classes is not None else [
+            (i, 0 if np.random.normal(0.5, 0.1) > 0.5 else 1, l2[name_to_idx[i]]) for i in idx_2]
+        guess.sort(key=itemgetter(1), reverse=True)
         stop = min(self._batch_size, len(idx_2))
-        if self._num_classes is not None:
-            return [(i, random.randint(0, self._num_classes-1), l2[name_to_idx[i]]) for i in idx_2[:stop]]
-        else:
-            return [(i, 0 if np.random.normal(0.5, 0.1) > 0.5 else 1, l2[name_to_idx[i]])
-                    for i in idx_2[:stop]]
+        return guess[0:stop]
 
     def _euclidean(self, data1, data2, typ="euclidean"):
         mx1, idx_1, l1 = self._to_matrix(data1)

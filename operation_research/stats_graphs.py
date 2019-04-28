@@ -272,14 +272,56 @@ def valid_multicolor_graphs():
         export_png(figures[i], os.path.join(os.getcwd(), "..", "fig", "stats_graphs", str(names[i]) + ".png"))
 
 
+def graph_amounts_at_one_fig():
+    # Plot in one figure:
+    # All graphs and black graphs, without filters.
+    # All and black graphs filtered by having at least 3 vertices and at least one motif.
+    # All and black graphs filtered by having 3 vertices only.
+    dir_path = os.path.join(os.getcwd(),
+                            "..", "pkl", "graph_measures", "Refael_12_18__bi_ds_1_st_0_ws_None_d_True_mc_False")
+    fig = figure(plot_width=800, plot_height=400,
+                 title="Number of graphs, all and blacks, filtered and unfiltered",
+                 x_axis_label='time', y_axis_label="number of graphs")
+    df = pd.read_csv(os.path.join(os.getcwd(), "..", "INPUT_DATABASE", "Refael_18_12_18_Binary.csv"))
+    community_target = {}
+    for line in range(df.shape[0]):
+        if not df.loc[line, "Community"] in community_target:
+            community_target[df.loc[line, "Community"]] = df.loc[line, "target"]
+    time_numbers = np.zeros((6, len(os.listdir(dir_path))))
+    for time in os.listdir(dir_path):
+        for community in os.listdir(os.path.join(dir_path, time)):
+            time_numbers[0, int(time.split("_")[1])] += 1
+            if community_target[int(community)] == 1:  # Assuming black = 1, which is true.
+                time_numbers[1, int(time.split("_")[1])] += 1
+            graph = pickle.load(open(os.path.join(dir_path, time, community, "gnx.pkl"), "rb"))
+            if len(graph) > 2:
+                time_numbers[4, int(time.split("_")[1])] += 1
+                if community_target[int(community)] == 1:
+                    time_numbers[5, int(time.split("_")[1])] += 1
+            largest_cc = max(nx.weakly_connected_components(graph), key=len)
+            if len(largest_cc) > 2:
+                time_numbers[2, int(time.split("_")[1])] += 1
+                if community_target[int(community)] == 1:
+                    time_numbers[3, int(time.split("_")[1])] += 1
+    legends = ["All graphs", "Black graphs", "All graphs with at least one motif",
+               "Black graphs with at least one motif", "All graphs with min. 3 nodes", "Black graphs with min. 3 nodes"]
+    colors = ["blue", "green", "black", "orange", "red", "purple"]
+    for i in range(6):
+        fig.line(list(range(time_numbers.shape[1])), time_numbers[i, :], legend=legends[i], color=colors[i])
+    fig.toolbar.logo = None
+    fig.legend.location = "top_left"
+    export_png(fig, os.path.join(os.getcwd(), "..", "fig", "stats_graphs", "graph_amounts_filtered_unfiltered.png"))
+
+
 if __name__ == "__main__":
-    learner_mn = []
+    # learner_mn = []
     # for mnn in [0, 3, 5, 10]:
     #     r = RefaelLearner()
     #     learner_mn.append((r, mnn))
     # num_graphs_vs_min_nodes(learner_mn)
     # node_deg_vs_min_nodes(learner_mn)
-    valid_binary_graphs()
+    # valid_binary_graphs()
     # valid_multicolor_graphs()
     # r = RefaelLearner()
     # statgraphs(r)
+    graph_amounts_at_one_fig()

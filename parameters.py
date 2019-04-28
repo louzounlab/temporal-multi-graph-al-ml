@@ -11,8 +11,8 @@ REFAEL_PARAM = {
             'start_time': 0,
             'window_size': None,
             'database': 'Refael_12_18',
-            'data_file_name': 'Refael_18_12_18_Binary.csv',  # should be in ../data/
-            # 'data_file_name': 'Refael_18_12_18_Color_2.csv',
+            'data_file_name': 'Refael_18_12_18_Binary.csv',  # in INPUT_DATABASE
+            # 'data_file_name': 'Refael_18_12_18_Color_2.csv', 'Refael_18_12_18_Color_1.csv'
             'date_format': "%Y-%m-%d",  # Refael
             'directed': True,
             'white_label': 0,

@@ -204,13 +204,13 @@ def learning_methods_performance(performance_dict):
 
 if __name__ == "__main__":
     # Dictionary of whether to put all tries in one or to plot separated figures:
-    method_format_dict = {"eps": "a1", "min_nodes": "s", "que_batch": "a1", "win": "s"}
-    for criterion, fig_version in method_format_dict.items():
-        res_data, best_data, rand_data, perf_data = read_files(criterion, "030319_184221")
-        for tsk in ["recall", "precision", "false_alarm"]:
-            plot_one_method(task=tsk, results=res_data, bests=best_data, rands=rand_data, crit=criterion,
-                            figure_version=fig_version, method="XGBoost")
-        performance_plot(performance_dict=perf_data, crit=criterion, figure_version=fig_version, method="XGBoost")
+    # method_format_dict = {"eps": "a1", "min_nodes": "s", "que_batch": "a1", "win": "s"}
+    # for criterion, fig_version in method_format_dict.items():
+    #     res_data, best_data, rand_data, perf_data = read_files(criterion, "030319_184221")
+    #     for tsk in ["recall", "precision", "false_alarm"]:
+    #         plot_one_method(task=tsk, results=res_data, bests=best_data, rands=rand_data, crit=criterion,
+    #                         figure_version=fig_version, method="XGBoost")
+    #     performance_plot(performance_dict=perf_data, crit=criterion, figure_version=fig_version, method="XGBoost")
     res_, best_, rand_, perf_ = read_files("learn_method", "030319_184221")
     compare_learning_methods(res_, best_, rand_)
     learning_methods_performance(perf_)

@@ -36,3 +36,19 @@ NODE_FEATURES_ML = {
     # "first_neighbor_histogram": FeatureMeta(nth_neighbor_calculator(1), {"fnh", "first_neighbor"}),
     # "second_neighbor_histogram": FeatureMeta(nth_neighbor_calculator(2), {"snh", "second_neighbor"}),
 }
+
+# TODO: WAS ADDED
+NODE_FEATURES_ML_FEWER = {
+    "attractor_basin": FeatureMeta(AttractorBasinCalculator, {"ab"}),  # directed only
+    "average_neighbor_degree": FeatureMeta(AverageNeighborDegreeCalculator, {"avg_nd"}),
+    "betweenness_centrality": FeatureMeta(BetweennessCentralityCalculator, {"betweenness"}),
+    "bfs_moments": FeatureMeta(BfsMomentsCalculator, {"bfs"}),
+    "closeness_centrality": FeatureMeta(ClosenessCentralityCalculator, {"closeness"}),
+    "eccentricity": FeatureMeta(EccentricityCalculator, {"ecc"}),
+    "fiedler_vector": FeatureMeta(FiedlerVectorCalculator, {"fv"}),
+    "general": FeatureMeta(GeneralCalculator, {"gen"}),
+    "k_core": FeatureMeta(KCoreCalculator, {"kc"}),
+    "load_centrality": FeatureMeta(LoadCentralityCalculator, {"load_c"}),
+    "louvain": FeatureMeta(LouvainCalculator, {"lov"}),
+    "motif3": FeatureMeta(nth_nodes_motif(3), {"m3"})
+}

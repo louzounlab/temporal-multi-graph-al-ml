@@ -2,13 +2,14 @@ import pickle
 from collections import Counter
 import os
 from features_meta import NODE_FEATURES_ML
+# from features_meta import NODE_FEATURES_ML_FEWER
 from features_processor import FeaturesProcessor  # , log_norm
 from graph_features import GraphFeatures
 from loggers import PrintLogger
 # from motif_correlation.beta_calculator import LinearContext
 # from motif_correlation.features_picker import PearsonFeaturePicker
 from temporal_multi_graph import TemporalMultiGraph
-# import numpy as np
+import numpy as np
 
 
 class DataLoader:
@@ -95,7 +96,9 @@ class DataLoader:
                                         is_max_connected=self._params['max_connected'],
                                         logger=PrintLogger(self._params['database_full_name']))
                 raw_ftr.build(should_dump=True)  # build features
-                nodes_and_edges = [multi_graph.node_count(graph_id=name), multi_graph.edge_count(graph_id=name)]
+                nodes_and_edges = [np.log(1 + multi_graph.node_count(graph_id=name)),
+                                   np.log(1 + multi_graph.edge_count(graph_id=name))]
+                # nodes_and_edges = [multi_graph.node_count(graph_id=name), multi_graph.edge_count(graph_id=name)]
                 # nodes_and_edges[name] = [multi_graph.node_count(graph_id=name), multi_graph.edge_count(graph_id=name)]
 
                 # ====================== motif ratio ========================
