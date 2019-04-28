@@ -1,9 +1,8 @@
 import pickle
 from collections import Counter
 import os
-# TODO: WAS CHANGED, LOG NODES AND EDGES COUNT WAS TAKEN.
-# from features_meta import NODE_FEATURES_ML
-from features_meta import NODE_FEATURES_ML_FEWER
+from features_meta import NODE_FEATURES_ML
+# from features_meta import NODE_FEATURES_ML_FEWER
 from features_processor import FeaturesProcessor  # , log_norm
 from graph_features import GraphFeatures
 from loggers import PrintLogger
@@ -93,7 +92,7 @@ class DataLoader:
                     os.mkdir(os.path.join(mg_dir_path, name))
                 gnx_dir_path = os.path.join(mg_dir_path, name)
 
-                raw_ftr = GraphFeatures(multi_graph.get_gnx(name), NODE_FEATURES_ML_FEWER, dir_path=gnx_dir_path,
+                raw_ftr = GraphFeatures(multi_graph.get_gnx(name), NODE_FEATURES_ML, dir_path=gnx_dir_path,
                                         is_max_connected=self._params['max_connected'],
                                         logger=PrintLogger(self._params['database_full_name']))
                 raw_ftr.build(should_dump=True)  # build features
