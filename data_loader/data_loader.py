@@ -1,14 +1,16 @@
 import pickle
 from collections import Counter
 import os
-from features_meta import NODE_FEATURES_ML
+# TODO: WAS CHANGED, LOG NODES AND EDGES COUNT WAS TAKEN.
+# from features_meta import NODE_FEATURES_ML
+from features_meta import NODE_FEATURES_ML_FEWER
 from features_processor import FeaturesProcessor  # , log_norm
 from graph_features import GraphFeatures
 from loggers import PrintLogger
 # from motif_correlation.beta_calculator import LinearContext
 # from motif_correlation.features_picker import PearsonFeaturePicker
 from temporal_multi_graph import TemporalMultiGraph
-# import numpy as np
+import numpy as np
 
 
 class DataLoader:
@@ -91,11 +93,13 @@ class DataLoader:
                     os.mkdir(os.path.join(mg_dir_path, name))
                 gnx_dir_path = os.path.join(mg_dir_path, name)
 
-                raw_ftr = GraphFeatures(multi_graph.get_gnx(name), NODE_FEATURES_ML, dir_path=gnx_dir_path,
+                raw_ftr = GraphFeatures(multi_graph.get_gnx(name), NODE_FEATURES_ML_FEWER, dir_path=gnx_dir_path,
                                         is_max_connected=self._params['max_connected'],
                                         logger=PrintLogger(self._params['database_full_name']))
                 raw_ftr.build(should_dump=True)  # build features
-                nodes_and_edges = [multi_graph.node_count(graph_id=name), multi_graph.edge_count(graph_id=name)]
+                nodes_and_edges = [np.log(1 + multi_graph.node_count(graph_id=name)),
+                                   np.log(1 + multi_graph.edge_count(graph_id=name))]
+                # nodes_and_edges = [multi_graph.node_count(graph_id=name), multi_graph.edge_count(graph_id=name)]
                 # nodes_and_edges[name] = [multi_graph.node_count(graph_id=name), multi_graph.edge_count(graph_id=name)]
 
                 # ====================== motif ratio ========================

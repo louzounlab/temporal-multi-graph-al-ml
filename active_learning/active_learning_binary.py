@@ -115,7 +115,10 @@ class TimedActiveLearningBi:
         # Recall, precision and false alarm are measured relative to the whole data at every time, not to the whole data
         # up until that time.
         performance_on_all = SmartSelector(self._params, batch_size=np.inf, ml_method=self._params['learn_method'])
-        if len(self._test) < self._batch_size:
+        if len(self._test) <= 0:
+            self._all_recall.append((time, 0))
+            self._all_precision.append((time, 0))
+            self._all_false_alarm.append((time, 0))
             return
         name_pred_label = performance_on_all.ml_select(self._train, self._test)
         tp = sum([1 if round(t[1]) == t[2] else 0 for t in name_pred_label if round(t[1]) != self._white])
@@ -133,10 +136,13 @@ class TimedActiveLearningBi:
         flag = 0
         while len(self._test) == 0:
             self._forward_time()
-            start_time += 1
+            flag += 1
             self._recall.append((start_time, self._found[1 - self._white] / self._n_black))
             self._precision.append((start_time, 0))  # By this time, no guesses were made.
             self._false_alarm.append((start_time, 0))  # No wrong guesses were made as well.
+            self._all_recall.append((start_time, 0))
+            self._all_precision.append((start_time, 0))
+            self._all_false_alarm.append((start_time, 0))
         self._first_exploration()
 
         # first exploration - reveal by distance
